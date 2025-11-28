@@ -39,19 +39,40 @@
   </header>
 </template>
 
-<script>
-export default {
-  name: 'TheHeader',
-  data() {
-    return { search: "" };
-  },
-  methods: {
-    buscar() {
-      this.$emit("buscar", this.search);
-      this.$router.push(`/peliculas?search=${this.search}`);
-    }
+<script setup>
+import { ref, onMounted, watch } from "vue"
+import { useRoute } from "vue-router"
+
+const API_KEY = "8a98a17434f1bc9090f77811562d337d"
+const URL_POPULARES = `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=es-ES`
+const URL_BUSCAR = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=es-ES&query=`
+
+const peliculas = ref([])
+const route = useRoute()
+
+async function cargarPeliculas(query = "") {
+  const url = query ? URL_BUSCAR + encodeURIComponent(query) : URL_POPULARES
+  try {
+    const res = await fetch(url)
+    const data = await res.json()
+    peliculas.value = data.results || []
+  } catch (err) {
+    console.error(err)
   }
 }
+
+// Cuando cargue la página, si hay ?search=, filtra
+onMounted(() => {
+  cargarPeliculas(route.query.search || "")
+})
+
+// Observa cambios en la URL (cuando el header hace push)
+watch(
+  () => route.query.search,
+  (newSearch) => {
+    cargarPeliculas(newSearch || "")
+  }
+)
 </script>
 
 <style scoped>
